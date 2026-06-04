@@ -1,0 +1,50 @@
+{
+  "/production-Queue/Queue": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/production-Queue/CfnOutput": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CfnOutput"
+    }
+  ],
+  "/production-Queue/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/production-Queue/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/production-Queue/Queue/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Queue4A7E3555"
+    }
+  ],
+  "/production-Queue/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    }
+  ],
+  "/production-Queue/Exports/Output{\"Fn::GetAtt\":[\"Queue4A7E3555\",\"Arn\"]}": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ExportsOutputFnGetAttQueue4A7E3555Arn15A7202E"
+    }
+  ],
+  "/production-Queue/Exports/Output{\"Fn::GetAtt\":[\"Queue4A7E3555\",\"QueueName\"]}": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ExportsOutputFnGetAttQueue4A7E3555QueueName07D5D357"
+    }
+  ]
+}

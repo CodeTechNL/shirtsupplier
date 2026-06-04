@@ -1,0 +1,153 @@
+{
+ "Resources": {
+  "SecurityGroupDD263621": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "SecurityGroup associated with the MySQL RDS Instance",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": "vpc-0f5483819f479489d"
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Rds/SecurityGroup/Resource"
+   }
+  },
+  "DatabaseInstanceSubnetGroupA4FFF2A4": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for DatabaseInstance database",
+    "SubnetIds": [
+     "subnet-0631053e1d287c4fb",
+     "subnet-002044456902bac60",
+     "subnet-01e0a5946e1c36d84"
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Rds/DatabaseInstance/SubnetGroup/Default"
+   }
+  },
+  "DatabaseInstance24D16791": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "AllowMajorVersionUpgrade": false,
+    "AutoMinorVersionUpgrade": true,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBInstanceIdentifier": "production-db",
+    "DBName": "shirt_supplier",
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseInstanceSubnetGroupA4FFF2A4"
+    },
+    "Engine": "mysql",
+    "EngineVersion": "8.4.5",
+    "MasterUserPassword": "dummy",
+    "MasterUsername": "dummy",
+    "MaxAllocatedStorage": 50,
+    "MultiAZ": false,
+    "PubliclyAccessible": true,
+    "StorageType": "gp3",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "SecurityGroupDD263621",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Snapshot",
+   "DeletionPolicy": "Snapshot",
+   "Metadata": {
+    "aws:cdk:path": "production-Rds/DatabaseInstance/Resource"
+   }
+  },
+  "DbHostParameter3A82532E": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Name": "/production/DB_HOST",
+    "Type": "String",
+    "Value": {
+     "Fn::GetAtt": [
+      "DatabaseInstance24D16791",
+      "Endpoint.Address"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Rds/DbHostParameter/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/41TTW/bMAz9LdVxcLwl62HwzV2xoYeugbP2EhQDLTMGE1kSRCmZZ/i/D/6si61AD4YpfjzqkU+beHP9Jf50BRdeyeK0UpTHzc6DPEUZsglO4l58ENHie47gwr8alJu42aEMjnz93Zlg940ApcwlVeoh+NwEXYjkAIoxEgWydGQ9GS2SHuhsZW+1z9HXg34F1Eau4Li5BQ85MN5p9qAl7htRjK4fUOGIQ2P0rkDt6UDoxkB3Fwkei503DsopH4I396SNe0LHZPSjLR0UKBLvAg5Vl3s4/hsfmaAuSaNImtH6WdsJenCMdV3GISg1H/uUaoE80I+EBQcVenQ9+W9QkarHdCZdKnxkdJnx0E0vtVaRhMUgh66vy4K1xnnOEIoM+4IbkKdgeaDZNQ25IqnqVEpkplzNE5gGuiBWwe/0/9M8W7kLuUbPHV/uzbFw23foCFZBeUr/zCPk5bJZJPteVbMiIiEd9tsExROjoesIXdrPnW6GzpP23pbYO6/psDJnUFujSNYLbd7eLBoNjkmSbcRcdQ/GkS630x73zctOF0rlPusJVMAF+lzVtt3xIXgbfBtpU2B85I/nzXW8XsfrqyMTrVzQniqMs+H/F0aUHdO+AwAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Rds/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "CfnOutput": {
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseInstance24D16791",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "ExportsOutputFnGetAttSecurityGroupDD263621GroupIdDF6F8B09": {
+   "Value": {
+    "Fn::GetAtt": [
+     "SecurityGroupDD263621",
+     "GroupId"
+    ]
+   },
+   "Export": {
+    "Name": "production-Rds:ExportsOutputFnGetAttSecurityGroupDD263621GroupIdDF6F8B09"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

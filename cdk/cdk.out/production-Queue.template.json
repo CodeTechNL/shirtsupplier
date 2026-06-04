@@ -1,0 +1,88 @@
+{
+ "Resources": {
+  "Queue4A7E3555": {
+   "Type": "AWS::SQS::Queue",
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "production-Queue/Queue/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zPSMzKx0DNQTCwv1k1OydbNyUzSqw4uSUzO1kksL44vLizWqw4sTS1NjVbSUorVcU7LA/NqQSz/0pKC0pJanbz8lFS9rGL9MiMTPUNDPUPFrOLMTN2i0rySzNxUvSAIDQCNee5uaQAAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Queue/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "CfnOutput": {
+   "Description": "SQS Queue ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "Queue4A7E3555",
+     "Arn"
+    ]
+   }
+  },
+  "ExportsOutputFnGetAttQueue4A7E3555Arn15A7202E": {
+   "Value": {
+    "Fn::GetAtt": [
+     "Queue4A7E3555",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "production-Queue:ExportsOutputFnGetAttQueue4A7E3555Arn15A7202E"
+   }
+  },
+  "ExportsOutputFnGetAttQueue4A7E3555QueueName07D5D357": {
+   "Value": {
+    "Fn::GetAtt": [
+     "Queue4A7E3555",
+     "QueueName"
+    ]
+   },
+   "Export": {
+    "Name": "production-Queue:ExportsOutputFnGetAttQueue4A7E3555QueueName07D5D357"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

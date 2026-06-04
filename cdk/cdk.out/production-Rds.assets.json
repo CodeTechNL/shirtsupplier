@@ -1,0 +1,21 @@
+{
+  "version": "53.0.0",
+  "files": {
+    "f365be91cb3cec220a1c71001d51b9a7124c860bf4aee57a24eea4ac35c880b2": {
+      "displayName": "production-Rds Template",
+      "source": {
+        "path": "production-Rds.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "277328279708-eu-central-1-122f9537": {
+          "bucketName": "cdk-hnb659fds-assets-277328279708-eu-central-1",
+          "objectKey": "f365be91cb3cec220a1c71001d51b9a7124c860bf4aee57a24eea4ac35c880b2.json",
+          "region": "eu-central-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::277328279708:role/cdk-hnb659fds-file-publishing-role-277328279708-eu-central-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

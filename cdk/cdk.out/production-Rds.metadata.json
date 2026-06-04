@@ -1,0 +1,148 @@
+{
+  "/production-Rds/Default-VPC": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/production-Rds/SecurityGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "allowAllOutbound": false,
+        "description": "*",
+        "vpc": "*"
+      }
+    }
+  ],
+  "/production-Rds/DatabaseInstance": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "databaseName": "*",
+        "instanceIdentifier": "*",
+        "allocatedStorage": "*",
+        "autoMinorVersionUpgrade": true,
+        "allowMajorVersionUpgrade": false,
+        "engine": {
+          "engineType": "*",
+          "engineVersion": {
+            "fullVersion": "*",
+            "majorVersion": "*"
+          },
+          "parameterGroupFamily": "*",
+          "singleUserRotationApplication": "*",
+          "engineFamily": "*",
+          "supportsReadReplicaBackups": true
+        },
+        "publiclyAccessible": true,
+        "instanceType": "*",
+        "maxAllocatedStorage": "*",
+        "vpcSubnets": {
+          "subnetType": "Public"
+        },
+        "multiAz": false,
+        "securityGroups": [
+          "*"
+        ],
+        "vpc": "*",
+        "credentials": "*",
+        "storageType": "gp3"
+      }
+    }
+  ],
+  "/production-Rds/DbHostParameter": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "parameterName": "*",
+        "stringValue": "*"
+      }
+    }
+  ],
+  "/production-Rds/CfnOutput": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CfnOutput"
+    }
+  ],
+  "/production-Rds/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/production-Rds/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/production-Rds/Default-VPC/PublicSubnet1": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/production-Rds/Default-VPC/PublicSubnet2": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/production-Rds/Default-VPC/PublicSubnet3": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/production-Rds/SecurityGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "SecurityGroupDD263621"
+    }
+  ],
+  "/production-Rds/DatabaseInstance/SubnetGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "description": "*",
+        "vpc": "*",
+        "vpcSubnets": {
+          "subnetType": "Public"
+        },
+        "removalPolicy": "*"
+      }
+    }
+  ],
+  "/production-Rds/DatabaseInstance/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DatabaseInstance24D16791"
+    }
+  ],
+  "/production-Rds/DbHostParameter/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DbHostParameter3A82532E"
+    }
+  ],
+  "/production-Rds/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    }
+  ],
+  "/production-Rds/Exports/Output{\"Fn::GetAtt\":[\"SecurityGroupDD263621\",\"GroupId\"]}": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ExportsOutputFnGetAttSecurityGroupDD263621GroupIdDF6F8B09"
+    }
+  ],
+  "/production-Rds/DatabaseInstance/SubnetGroup/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DatabaseInstanceSubnetGroupA4FFF2A4"
+    }
+  ]
+}

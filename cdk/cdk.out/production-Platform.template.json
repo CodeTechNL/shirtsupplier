@@ -1,0 +1,718 @@
+{
+ "Resources": {
+  "ClusterEB0386A7": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "shirtsupplier-production"
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/Cluster/Resource"
+   }
+  },
+  "TaskDefTaskRole1EDB4A67": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/TaskDef/TaskRole/Resource"
+   }
+  },
+  "TaskDefTaskRoleDefaultPolicyA592CB18": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:ChangeMessageVisibility",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:ReceiveMessage",
+        "sqs:SendMessage"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::ImportValue": "production-Queue:ExportsOutputFnGetAttQueue4A7E3555Arn15A7202E"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TaskDefTaskRoleDefaultPolicyA592CB18",
+    "Roles": [
+     {
+      "Ref": "TaskDefTaskRole1EDB4A67"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/TaskDef/TaskRole/DefaultPolicy/Resource"
+   }
+  },
+  "TaskDef54694570": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "APP_ENV",
+        "Value": "production"
+       },
+       {
+        "Name": "APP_DEBUG",
+        "Value": "false"
+       },
+       {
+        "Name": "LOG_CHANNEL",
+        "Value": "stderr"
+       },
+       {
+        "Name": "CACHE_STORE",
+        "Value": "file"
+       },
+       {
+        "Name": "SESSION_DRIVER",
+        "Value": "cookie"
+       },
+       {
+        "Name": "DB_CONNECTION",
+        "Value": "mysql"
+       },
+       {
+        "Name": "DB_PORT",
+        "Value": "3306"
+       },
+       {
+        "Name": "DB_DATABASE",
+        "Value": "shirt_supplier"
+       },
+       {
+        "Name": "QUEUE_CONNECTION",
+        "Value": "sqs"
+       },
+       {
+        "Name": "SQS_PREFIX",
+        "Value": "https://sqs.eu-central-1.amazonaws.com/277328279708"
+       },
+       {
+        "Name": "SQS_QUEUE",
+        "Value": {
+         "Fn::ImportValue": "production-Queue:ExportsOutputFnGetAttQueue4A7E3555QueueName07D5D357"
+        }
+       },
+       {
+        "Name": "LIGHTSPEED_API_CLUSTER",
+        "Value": "eu1"
+       },
+       {
+        "Name": "LIGHTSPEED_API_DEFAULT_LANGUAGE",
+        "Value": "nl"
+       }
+      ],
+      "Essential": true,
+      "HealthCheck": {
+       "Command": [
+        "CMD-SHELL",
+        "curl -f http://localhost:80/up || exit 1"
+       ],
+       "Interval": 30,
+       "Retries": 3,
+       "StartPeriod": 60,
+       "Timeout": 5
+      },
+      "Image": {
+       "Fn::Join": [
+        "",
+        [
+         "277328279708.dkr.ecr.eu-central-1.",
+         {
+          "Ref": "AWS::URLSuffix"
+         },
+         "/shirtsupplier-production:latest"
+        ]
+       ]
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": "/ecs/shirtsupplier-production",
+        "awslogs-stream-prefix": "app",
+        "awslogs-region": "eu-central-1"
+       }
+      },
+      "Name": "app",
+      "PortMappings": [
+       {
+        "ContainerPort": 80,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "APP_KEY",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/APP_KEY"
+       },
+       {
+        "Name": "APP_URL",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/APP_URL"
+       },
+       {
+        "Name": "DB_HOST",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_HOST"
+       },
+       {
+        "Name": "DB_USERNAME",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_USERNAME"
+       },
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_PASSWORD"
+       },
+       {
+        "Name": "LIGHTSPEED_API_KEY",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/LIGHTSPEED_API_KEY"
+       },
+       {
+        "Name": "LIGHTSPEED_API_SECRET",
+        "ValueFrom": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/LIGHTSPEED_API_SECRET"
+       }
+      ]
+     }
+    ],
+    "Cpu": "256",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefExecutionRoleB4775C97",
+      "Arn"
+     ]
+    },
+    "Family": "productionPlatformTaskDefCEF0BB13",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "RuntimePlatform": {
+     "CpuArchitecture": "X86_64",
+     "OperatingSystemFamily": "LINUX"
+    },
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefTaskRole1EDB4A67",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/TaskDef/Resource"
+   }
+  },
+  "TaskDefExecutionRoleB4775C97": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/TaskDef/ExecutionRole/Resource"
+   }
+  },
+  "TaskDefExecutionRoleDefaultPolicy0DBB737A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:ecr:eu-central-1:277328279708:repository/shirtsupplier-production"
+      },
+      {
+       "Action": "ecr:GetAuthorizationToken",
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:logs:eu-central-1:277328279708:log-group:/ecs/shirtsupplier-production:*"
+      },
+      {
+       "Action": [
+        "ssm:DescribeParameters",
+        "ssm:GetParameter",
+        "ssm:GetParameterHistory",
+        "ssm:GetParameters"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/APP_KEY",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/APP_URL",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_HOST",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_PASSWORD",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/DB_USERNAME",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/LIGHTSPEED_API_KEY",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/LIGHTSPEED_API_SECRET"
+       ]
+      },
+      {
+       "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:ssm:eu-central-1:277328279708:parameter/production/*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TaskDefExecutionRoleDefaultPolicy0DBB737A",
+    "Roles": [
+     {
+      "Ref": "TaskDefExecutionRoleB4775C97"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "FargateSG90149BB3": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for Fargate tasks",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTP",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTPS",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     }
+    ],
+    "VpcId": "vpc-0f5483819f479489d"
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/FargateSG/Resource"
+   }
+  },
+  "RdsIngressFromFargate": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow Fargate tasks to connect to RDS",
+    "FromPort": 3306,
+    "GroupId": {
+     "Fn::ImportValue": "production-Rds:ExportsOutputFnGetAttSecurityGroupDD263621GroupIdDF6F8B09"
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "FargateSG90149BB3",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3306
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/RdsIngressFromFargate"
+   }
+  },
+  "ServiceD69D759B": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "CapacityProviderStrategy": [
+     {
+      "CapacityProvider": "FARGATE",
+      "Weight": 1
+     }
+    ],
+    "Cluster": {
+     "Ref": "ClusterEB0386A7"
+    },
+    "DeploymentConfiguration": {
+     "DeploymentCircuitBreaker": {
+      "Enable": true,
+      "Rollback": true
+     },
+     "MaximumPercent": 100,
+     "MinimumHealthyPercent": 0
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "ENABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "FargateSG90149BB3",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       "subnet-0631053e1d287c4fb",
+       "subnet-002044456902bac60",
+       "subnet-01e0a5946e1c36d84"
+      ]
+     }
+    },
+    "ServiceName": "shirtsupplier-production",
+    "TaskDefinition": {
+     "Ref": "TaskDef54694570"
+    }
+   },
+   "DependsOn": [
+    "TaskDefTaskRoleDefaultPolicyA592CB18",
+    "TaskDefTaskRole1EDB4A67"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/Service/Service"
+   }
+  },
+  "DnsUpdaterServiceRoleD28EEB31": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/DnsUpdater/ServiceRole/Resource"
+   }
+  },
+  "DnsUpdaterServiceRoleDefaultPolicy7C4C2CB5": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "ssm:GetParameter",
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/cloudflare/API_TOKEN",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/cloudflare/RECORD_ID",
+        "arn:aws:ssm:eu-central-1:277328279708:parameter/production/cloudflare/ZONE_ID"
+       ]
+      },
+      {
+       "Action": [
+        "ec2:DescribeNetworkInterfaces",
+        "ecs:DescribeTasks"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "DnsUpdaterServiceRoleDefaultPolicy7C4C2CB5",
+    "Roles": [
+     {
+      "Ref": "DnsUpdaterServiceRoleD28EEB31"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/DnsUpdater/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "DnsUpdater32CFD21F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "\nconst { ECSClient, DescribeTasksCommand } = require(\"@aws-sdk/client-ecs\");\nconst { EC2Client, DescribeNetworkInterfacesCommand } = require(\"@aws-sdk/client-ec2\");\nconst { SSMClient, GetParameterCommand } = require(\"@aws-sdk/client-ssm\");\n\nconst ecs = new ECSClient();\nconst ec2 = new EC2Client();\nconst ssm = new SSMClient();\n\nlet cachedParams = null;\n\nasync function getCloudflareParams() {\n    if (cachedParams) return cachedParams;\n    const [apiToken, zoneId, recordId] = await Promise.all([\n        ssm.send(new GetParameterCommand({ Name: process.env.SSM_CF_API_TOKEN, WithDecryption: true })),\n        ssm.send(new GetParameterCommand({ Name: process.env.SSM_CF_ZONE_ID })),\n        ssm.send(new GetParameterCommand({ Name: process.env.SSM_CF_RECORD_ID })),\n    ]);\n    cachedParams = {\n        apiToken: apiToken.Parameter.Value,\n        zoneId: zoneId.Parameter.Value,\n        recordId: recordId.Parameter.Value,\n    };\n    return cachedParams;\n}\n\nexports.handler = async (event) => {\n    const detail = event.detail;\n    if (detail.lastStatus !== \"RUNNING\") return;\n\n    const clusterArn = detail.clusterArn;\n    const taskArn = detail.taskArn;\n\n    const taskResponse = await ecs.send(new DescribeTasksCommand({\n        cluster: clusterArn,\n        tasks: [taskArn],\n    }));\n\n    const task = taskResponse.tasks?.[0];\n    if (!task) return;\n\n    const eniAttachment = task.attachments?.find(a => a.type === \"ElasticNetworkInterface\");\n    const eniId = eniAttachment?.details?.find(d => d.name === \"networkInterfaceId\")?.value;\n    if (!eniId) return;\n\n    const eniResponse = await ec2.send(new DescribeNetworkInterfacesCommand({\n        NetworkInterfaceIds: [eniId],\n    }));\n\n    const publicIp = eniResponse.NetworkInterfaces?.[0]?.Association?.PublicIp;\n    if (!publicIp) return;\n\n    const cf = await getCloudflareParams();\n\n    const response = await fetch(\n        `https://api.cloudflare.com/client/v4/zones/${cf.zoneId}/dns_records/${cf.recordId}`,\n        {\n            method: \"PUT\",\n            headers: {\n                \"Authorization\": `Bearer ${cf.apiToken}`,\n                \"Content-Type\": \"application/json\",\n            },\n            body: JSON.stringify({\n                type: \"A\",\n                name: process.env.DOMAIN_NAME,\n                content: publicIp,\n                proxied: true,\n                ttl: 1,\n            }),\n        }\n    );\n\n    const result = await response.json();\n    if (!result.success) {\n        console.error(\"Cloudflare API error:\", JSON.stringify(result.errors));\n        throw new Error(\"Failed to update Cloudflare DNS\");\n    }\n\n    console.log(\"Updated Cloudflare DNS: \" + process.env.DOMAIN_NAME + \" -> \" + publicIp + \" (proxied)\");\n};\n"
+    },
+    "Environment": {
+     "Variables": {
+      "DOMAIN_NAME": "shirtsupplier.app",
+      "SSM_CF_API_TOKEN": "/production/cloudflare/API_TOKEN",
+      "SSM_CF_ZONE_ID": "/production/cloudflare/ZONE_ID",
+      "SSM_CF_RECORD_ID": "/production/cloudflare/RECORD_ID"
+     }
+    },
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "DnsUpdaterServiceRoleD28EEB31",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "DnsUpdaterServiceRoleDefaultPolicy7C4C2CB5",
+    "DnsUpdaterServiceRoleD28EEB31"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/DnsUpdater/Resource"
+   }
+  },
+  "DnsUpdaterLogGroup8E088896": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "DnsUpdater32CFD21F"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/DnsUpdater/LogGroup/Resource"
+   }
+  },
+  "EcsTaskRunningRule4B9149F9": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventPattern": {
+     "source": [
+      "aws.ecs"
+     ],
+     "detail-type": [
+      "ECS Task State Change"
+     ],
+     "detail": {
+      "clusterArn": [
+       {
+        "Fn::GetAtt": [
+         "ClusterEB0386A7",
+         "Arn"
+        ]
+       }
+      ],
+      "lastStatus": [
+       "RUNNING"
+      ]
+     }
+    },
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "DnsUpdater32CFD21F",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/EcsTaskRunningRule/Resource"
+   }
+  },
+  "EcsTaskRunningRuleAllowEventRuleproductionPlatformDnsUpdaterAA26343261A7DD1D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "DnsUpdater32CFD21F",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "EcsTaskRunningRule4B9149F9",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/EcsTaskRunningRule/AllowEventRuleproductionPlatformDnsUpdaterAA263432"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+1W32vbMBD+W6rHoWpr6MPIW5qtIzDWkuTNhHGVrqkaWfL0IyUI/+9DspzGDazbWFcYezC2v7v77k463WnERufv2bsTeHCnXGxOlbxhceGBb+gcnQmWY0XeEHrwrCg8uK8RuWVzbIyT3tjdBTikyB2LUxWcR1tFsm04GWcj3mFfoMaMtCs6vdVFk16CXYPHJbjNB7yVWnpp9FOvzz2ZcUhBp0Z7kBrtAVacLdBuZZdbtiz/LZVQszg3CqtIwLlQo7jYkXEkjZWaywbUhHMTtC+pdTrJYMKTgy6/lkYCQizNdW91bZTkOzKuYrvKUu+B3820khr3shTN88If8/52zJRYo/Bxj14vhf/SP7ShNWhYo8iUEl0iHWC7iS26PxPI39/ufDRTWrSDc1PonS1NkhzFcAwLsfDgsUbt3cDtMfzS/P8Y/DrLlauiK4iWIh+xuEAerPS7T9aEZjB5BDpuZbM/FJSAUuZhotRV8DcmaEHG3gYsvmZ6bdG5ecghR8JBdzXdIUmTEm60xnzOXOEMWn4LOBN948wrs3oRzjKtDvI9AorDliqobwSweBl0pq4isUF7WTo8JXeghULbT2kjegHqrbRGp1UvSLIywR+Oho+HSv28Xr2UMCfeZ5IrAG0tnZNGt1SZtWPxs1n3FaDK55MrR6/RUtymimIxbUIVSf69Bu8xdcRIuqvPvog8SLXcNUOg77Ie7Bq9GyzNgK76Fb59T8ysg0YYFLZtTh0s1JjuTtNbfRV8E3xLtRHI7t3b7eicnZ2xs5N7J+Vp2XA2797fATlL2oTwCQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "production-Platform/CDKMetadata/Default"
+   }
+  }
+ },
+ "Parameters": {
+  "ParamAPPKEYParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/APP_KEY"
+  },
+  "ParamAPPURLParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/APP_URL"
+  },
+  "ParamDBHOSTParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/DB_HOST"
+  },
+  "ParamDBUSERNAMEParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/DB_USERNAME"
+  },
+  "ParamDBPASSWORDParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/DB_PASSWORD"
+  },
+  "ParamLIGHTSPEEDAPIKEYParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/LIGHTSPEED_API_KEY"
+  },
+  "ParamLIGHTSPEEDAPISECRETParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/LIGHTSPEED_API_SECRET"
+  },
+  "CloudflareApiTokenParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/cloudflare/API_TOKEN"
+  },
+  "CloudflareZoneIdParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/cloudflare/ZONE_ID"
+  },
+  "CloudflareRecordIdParameter": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/production/cloudflare/RECORD_ID"
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Outputs": {
+  "EcrRepositoryUri": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "277328279708.dkr.ecr.eu-central-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/shirtsupplier-production"
+     ]
+    ]
+   }
+  },
+  "ClusterName": {
+   "Value": {
+    "Ref": "ClusterEB0386A7"
+   }
+  },
+  "ServiceName": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ServiceD69D759B",
+     "Name"
+    ]
+   }
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

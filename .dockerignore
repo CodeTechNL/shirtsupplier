@@ -1,0 +1,15 @@
+node_modules/
+vendor/
+.git/
+cdk/
+tests/
+.env
+.env.*
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+bootstrap/cache/
+.phpunit.result.cache
+.idea/
+.vscode/
