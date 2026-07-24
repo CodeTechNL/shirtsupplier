@@ -7,6 +7,7 @@ use App\Http\Requests\Api\GetSameProductsRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 
 class SameProductController extends Controller
 {
@@ -20,16 +21,24 @@ class SameProductController extends Controller
 
         $group = $product->sameProductGroups->first();
 
-        if (! $group) {
-            return response()->json(['products' => [], 'count' => 0]);
-        }
+        $sameProducts = $group
+            ? $group->products->where('id', '!=', $product->id)
+            : new Collection;
 
-        $sameProducts = $group->products
-            ->where('id', '!=', $product->id);
+        $products = $sameProducts->mapWithKeys(fn (Product $sameProduct): array => [
+            $sameProduct->id => (new ProductResource($sameProduct))->resolve($request),
+        ]);
 
         return response()->json([
-            'products' => ProductResource::collection($sameProducts),
-            'count' => $sameProducts->count(),
+            'data' => [
+                'products' => $products->isEmpty() ? (object) [] : $products,
+                'count' => $sameProducts->count(),
+            ],
+            'meta' => [],
+            'status' => [
+                'code' => 200,
+                'status' => 'success',
+            ],
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SameProductGroups\RelationManagers;
 
 use App\Models\Product;
+use App\Models\Variant;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
@@ -38,9 +39,10 @@ class ProductsRelationManager extends RelationManager
                     ->recordSelect(fn (Select $select): Select => $select
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => static::attachableProductsQuery($search)
+                            ->with('variants')
                             ->limit(50)
                             ->get()
-                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::productLabel($product)])
+                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::searchResultLabel($product)])
                             ->all())
                         ->getOptionLabelsUsing(fn (array $values): array => Product::query()
                             ->whereIn('id', $values)
@@ -83,5 +85,23 @@ class ProductsRelationManager extends RelationManager
     protected static function productLabel(Product $product): string
     {
         return $product->getTranslation('nl', 'fulltitle') ?: $product->getTranslation('nl', 'title');
+    }
+
+    /**
+     * Product label enriched with the variant identifiers (SKU, article code,
+     * EAN) so a match on one of those columns is visible in the search results.
+     */
+    protected static function searchResultLabel(Product $product): string
+    {
+        $codes = $product->variants
+            ->flatMap(fn (Variant $variant): array => [$variant->sku, $variant->article_code, $variant->ean])
+            ->filter()
+            ->unique()
+            ->take(5)
+            ->implode(', ');
+
+        return filled($codes)
+            ? static::productLabel($product)." — {$codes}"
+            : static::productLabel($product);
     }
 }
