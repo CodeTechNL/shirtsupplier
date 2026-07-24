@@ -31,7 +31,6 @@ it('creates a user with a hashed password', function () {
             'name' => 'Jane Doe',
             'email' => 'jane@example.test',
             'password' => 'secret-password',
-            'super_admin' => false,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
@@ -43,8 +42,11 @@ it('creates a user with a hashed password', function () {
         ->and(Hash::check('secret-password', $user->password))->toBeTrue();
 });
 
-it('can create a super admin', function () {
+it('lets a super admin create another super admin', function () {
+    actingAs(User::factory()->superAdmin()->create());
+
     Livewire::test(CreateUser::class)
+        ->assertFormFieldIsVisible('super_admin')
         ->fillForm([
             'name' => 'Root',
             'email' => 'root@example.test',
@@ -55,6 +57,38 @@ it('can create a super admin', function () {
         ->assertHasNoFormErrors();
 
     assertDatabaseHas('users', ['email' => 'root@example.test', 'super_admin' => true]);
+});
+
+it('hides the super admin toggle from normal users', function () {
+    Livewire::test(CreateUser::class)
+        ->assertFormFieldIsHidden('super_admin');
+});
+
+it('prevents a normal user from forcing super admin on create', function () {
+    Livewire::test(CreateUser::class)
+        ->fillForm([
+            'name' => 'Sneaky',
+            'email' => 'sneaky@example.test',
+            'password' => 'secret-password',
+        ])
+        ->set('data.super_admin', true)
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $user = User::where('email', 'sneaky@example.test')->firstOrFail();
+
+    expect($user->super_admin)->toBeFalse();
+});
+
+it('prevents a normal user from promoting a user to super admin on edit', function () {
+    $target = User::factory()->create(['super_admin' => false]);
+
+    Livewire::test(EditUser::class, ['record' => $target->getKey()])
+        ->set('data.super_admin', true)
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($target->refresh()->super_admin)->toBeFalse();
 });
 
 it('validates required fields when creating a user', function () {

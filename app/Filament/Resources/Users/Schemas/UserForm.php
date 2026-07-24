@@ -29,7 +29,8 @@ class UserForm
                     ->helperText('Leave blank to keep the current password when editing.'),
                 Toggle::make('super_admin')
                     ->label('Super admin')
-                    ->helperText('Super admins can only be deleted by other super admins.'),
+                    ->helperText('Super admins can only be deleted by other super admins.')
+                    ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false),
             ]);
     }
 }
