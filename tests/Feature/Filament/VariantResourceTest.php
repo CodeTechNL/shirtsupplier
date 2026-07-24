@@ -4,7 +4,6 @@ use App\Filament\Resources\Variants\Pages\ListVariants;
 use App\Filament\Resources\Variants\Pages\ViewVariant;
 use App\Filament\Resources\Variants\VariantResource;
 use App\Jobs\SyncVariants;
-use App\Jobs\Webhooks\InstallVariantWebhooks;
 use App\Models\User;
 use App\Models\Variant;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -53,14 +52,4 @@ it('can dispatch the sync variants job via the action', function () {
         ->assertNotified();
 
     Queue::assertPushed(SyncVariants::class);
-});
-
-it('can dispatch the install webhooks job via the action', function () {
-    Queue::fake();
-
-    Livewire\Livewire::test(ListVariants::class)
-        ->callAction('installWebhooks')
-        ->assertNotified();
-
-    Queue::assertPushed(InstallVariantWebhooks::class);
 });

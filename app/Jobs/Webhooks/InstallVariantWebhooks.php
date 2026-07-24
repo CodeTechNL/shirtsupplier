@@ -2,6 +2,7 @@
 
 namespace App\Jobs\Webhooks;
 
+use App\Models\Webhook;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use WebshopappApiClient;
@@ -47,6 +48,8 @@ class InstallVariantWebhooks implements ShouldQueue
                 ]);
             }
         }
+
+        Webhook::syncFromLightspeed($api);
     }
 
     public function failed(\Throwable $exception): void
