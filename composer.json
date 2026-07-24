@@ -9,6 +9,7 @@
         "php": "^8.3",
         "aws/aws-sdk-php": "^3.376",
         "barryvdh/laravel-debugbar": "^4.2",
+        "dutchcodingcompany/filament-developer-logins": "^2.1",
         "filament/filament": "^5.4",
         "laravel/framework": "^13.0",
         "laravel/octane": "^2.17",
