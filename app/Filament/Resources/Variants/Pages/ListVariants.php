@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Variants\Pages;
 
 use App\Filament\Resources\Variants\VariantResource;
 use App\Jobs\SyncVariants;
-use App\Jobs\Webhooks\InstallVariantWebhooks;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -28,20 +27,6 @@ class ListVariants extends ListRecords
 
                     Notification::make()
                         ->title('Variant sync job dispatched.')
-                        ->success()
-                        ->send();
-                }),
-            Action::make('installWebhooks')
-                ->label('Install Webhooks')
-                ->icon(Heroicon::OutlinedSignal)
-                ->requiresConfirmation()
-                ->modalHeading('Install Variant Webhooks')
-                ->modalDescription('This will reinstall the variant webhooks at Lightspeed. Are you sure?')
-                ->action(function () {
-                    InstallVariantWebhooks::dispatch();
-
-                    Notification::make()
-                        ->title('Webhook installation job dispatched.')
                         ->success()
                         ->send();
                 }),

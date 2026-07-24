@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'super_admin'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -28,6 +28,14 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Determine whether the user is a super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->super_admin;
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -37,6 +45,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'super_admin' => 'boolean',
         ];
     }
 }

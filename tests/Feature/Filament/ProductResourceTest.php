@@ -4,7 +4,6 @@ use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\SyncProducts;
-use App\Jobs\Webhooks\InstallProductWebhooks;
 use App\Models\Product;
 use App\Models\SameProductGroup;
 use App\Models\User;
@@ -58,16 +57,6 @@ it('can search products by title', function () {
         ->searchTable('Matching')
         ->assertCanSeeTableRecords([$matching])
         ->assertCanNotSeeTableRecords([$other]);
-});
-
-it('can dispatch the install webhooks job via the action', function () {
-    Queue::fake();
-
-    Livewire\Livewire::test(ListProducts::class)
-        ->callAction('installWebhooks')
-        ->assertNotified();
-
-    Queue::assertPushed(InstallProductWebhooks::class);
 });
 
 it('can dispatch the sync products job via the action', function () {
