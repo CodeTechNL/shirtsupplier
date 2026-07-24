@@ -36,6 +36,7 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('id', 'desc')
+            ->paginated([50])
             ->recordActions([
                 ViewAction::make(),
             ]);

@@ -6,6 +6,7 @@ use App\Filament\Resources\SameProductGroups\RelationManagers\ProductsRelationMa
 use App\Models\Product;
 use App\Models\SameProductGroup;
 use App\Models\User;
+use App\Models\Variant;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
@@ -82,4 +83,40 @@ it('validates that name is required on create', function () {
         ->callAction(CreateAction::class, ['name' => null])
         ->assertHasActionErrors(['name' => 'required'])
         ->assertNotNotified();
+});
+
+it('only lists attachable products that are not yet in a group', function () {
+    $free = Product::factory()->create();
+    $grouped = Product::factory()->create();
+    SameProductGroup::factory()->create()->products()->attach($grouped);
+
+    $ids = ProductsRelationManager::attachableProductsQuery()->pluck('id');
+
+    expect($ids)->toContain($free->id)
+        ->not->toContain($grouped->id);
+});
+
+it('finds attachable products by their variant sku, ean or article code', function () {
+    $bySku = Product::factory()->create();
+    Variant::factory()->for($bySku)->create(['sku' => 'SKU-ABC', 'ean' => '', 'article_code' => '']);
+
+    $byEan = Product::factory()->create();
+    Variant::factory()->for($byEan)->create(['sku' => '', 'ean' => '5099206084247', 'article_code' => '']);
+
+    $byArticleCode = Product::factory()->create();
+    Variant::factory()->for($byArticleCode)->create(['sku' => '', 'ean' => '', 'article_code' => 'ART-XYZ']);
+
+    expect(ProductsRelationManager::attachableProductsQuery('SKU-ABC')->pluck('id')->all())->toBe([$bySku->id])
+        ->and(ProductsRelationManager::attachableProductsQuery('5099206084247')->pluck('id')->all())->toBe([$byEan->id])
+        ->and(ProductsRelationManager::attachableProductsQuery('ART-XYZ')->pluck('id')->all())->toBe([$byArticleCode->id]);
+});
+
+it('finds attachable products by product title and variant title', function () {
+    $byProductTitle = Product::factory()->create(['fulltitle' => ['nl' => 'Uniquely Named Shirt']]);
+
+    $byVariantTitle = Product::factory()->create(['fulltitle' => ['nl' => 'Plain Shirt']]);
+    Variant::factory()->for($byVariantTitle)->create(['title' => 'XXL-Special']);
+
+    expect(ProductsRelationManager::attachableProductsQuery('Uniquely Named')->pluck('id')->all())->toBe([$byProductTitle->id])
+        ->and(ProductsRelationManager::attachableProductsQuery('XXL-Special')->pluck('id')->all())->toBe([$byVariantTitle->id]);
 });

@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\SameProductGroups\RelationManagers;
 
+use App\Models\Product;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
+use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -20,7 +21,7 @@ class ProductsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitle(fn ($record): string => $record->getTranslation('nl', 'fulltitle') ?: $record->getTranslation('nl', 'title'))
+            ->recordTitle(fn (Product $record): string => static::productLabel($record))
             ->columns([
                 TextColumn::make('fulltitle')
                     ->label('Title')
@@ -32,9 +33,20 @@ class ProductsRelationManager extends RelationManager
             ])
             ->headerActions([
                 AttachAction::make()
-                    ->preloadRecordSelect()
                     ->multiple()
-                    ->recordSelectOptionsQuery(fn (Builder $query) => $query->whereDoesntHave('sameProductGroups')),
+                    ->recordSelectOptionsQuery(fn (Builder $query): Builder => $query->whereDoesntHave('sameProductGroups'))
+                    ->recordSelect(fn (Select $select): Select => $select
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array => static::attachableProductsQuery($search)
+                            ->limit(50)
+                            ->get()
+                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::productLabel($product)])
+                            ->all())
+                        ->getOptionLabelsUsing(fn (array $values): array => Product::query()
+                            ->whereIn('id', $values)
+                            ->get()
+                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::productLabel($product)])
+                            ->all())),
             ])
             ->recordActions([
                 DetachAction::make(),
@@ -44,5 +56,32 @@ class ProductsRelationManager extends RelationManager
                     DetachBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Products eligible to attach, searchable by title and by their variants'
+     * SKU, EAN, article code, or title.
+     */
+    public static function attachableProductsQuery(?string $search = null): Builder
+    {
+        return Product::query()
+            ->whereDoesntHave('sameProductGroups')
+            ->when(filled($search), function (Builder $query) use ($search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('fulltitle', 'like', "%{$search}%")
+                        ->orWhereHas('variants', function (Builder $query) use ($search): void {
+                            $query->where('sku', 'like', "%{$search}%")
+                                ->orWhere('ean', 'like', "%{$search}%")
+                                ->orWhere('article_code', 'like', "%{$search}%")
+                                ->orWhere('title', 'like', "%{$search}%");
+                        });
+                });
+            });
+    }
+
+    protected static function productLabel(Product $product): string
+    {
+        return $product->getTranslation('nl', 'fulltitle') ?: $product->getTranslation('nl', 'title');
     }
 }
