@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use WebshopappApiClient;
 
-class InstallProductWebhooks implements ShouldQueue
+class InstallVariantWebhooks implements ShouldQueue
 {
     use Queueable;
 
@@ -15,7 +15,7 @@ class InstallProductWebhooks implements ShouldQueue
     /** @var int[] */
     public array $backoff = [5, 15, 30];
 
-    private const string ITEM_GROUP = 'products';
+    private const string ITEM_GROUP = 'variants';
 
     private const array ACTIONS = ['created', 'updated', 'deleted'];
 
@@ -40,7 +40,7 @@ class InstallProductWebhooks implements ShouldQueue
             foreach (self::ACTIONS as $action) {
                 $api->webhooks->create([
                     'format' => 'json',
-                    'address' => route("webhooks.products.{$action}", ['language' => $language]),
+                    'address' => route("webhooks.variants.{$action}", ['language' => $language]),
                     'isActive' => true,
                     'itemGroup' => self::ITEM_GROUP,
                     'itemAction' => $action,
