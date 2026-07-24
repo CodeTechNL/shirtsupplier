@@ -66,11 +66,20 @@ it('shows the matched variant identifiers in the result label', function () {
         ->and($label)->toContain('FINDME-SKU');
 });
 
-it('excludes products that already belong to a group from the attach search', function () {
+it('excludes products already in the current group from the attach search', function () {
+    $group = SameProductGroup::factory()->create();
+    $product = Product::factory()->create();
+    Variant::factory()->for($product)->create(['sku' => 'FINDME-SKU']);
+    $group->products()->attach($product);
+
+    expect(searchAttachableProducts($group, 'FINDME-SKU'))->not->toHaveKey($product->id);
+});
+
+it('still finds products that belong to a different group (multiple groups allowed)', function () {
     $group = SameProductGroup::factory()->create();
     $product = Product::factory()->create();
     Variant::factory()->for($product)->create(['sku' => 'FINDME-SKU']);
     SameProductGroup::factory()->create()->products()->attach($product);
 
-    expect(searchAttachableProducts($group, 'FINDME-SKU'))->not->toHaveKey($product->id);
+    expect(searchAttachableProducts($group, 'FINDME-SKU'))->toHaveKey($product->id);
 });

@@ -85,15 +85,22 @@ it('validates that name is required on create', function () {
         ->assertNotNotified();
 });
 
-it('only lists attachable products that are not yet in a group', function () {
-    $free = Product::factory()->create();
-    $grouped = Product::factory()->create();
-    SameProductGroup::factory()->create()->products()->attach($grouped);
+it('excludes only products already in the given group, allowing multiple groups', function () {
+    $group = SameProductGroup::factory()->create();
+    $otherGroup = SameProductGroup::factory()->create();
 
-    $ids = ProductsRelationManager::attachableProductsQuery()->pluck('id');
+    $free = Product::factory()->create();
+    $inThisGroup = Product::factory()->create();
+    $inOtherGroup = Product::factory()->create();
+
+    $group->products()->attach($inThisGroup);
+    $otherGroup->products()->attach($inOtherGroup);
+
+    $ids = ProductsRelationManager::attachableProductsQuery(excludeGroup: $group)->pluck('id');
 
     expect($ids)->toContain($free->id)
-        ->not->toContain($grouped->id);
+        ->toContain($inOtherGroup->id)
+        ->not->toContain($inThisGroup->id);
 });
 
 it('finds attachable products by their variant sku, ean or article code', function () {

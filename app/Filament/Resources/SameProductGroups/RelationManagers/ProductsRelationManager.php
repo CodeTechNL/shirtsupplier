@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SameProductGroups\RelationManagers;
 
 use App\Models\Product;
+use App\Models\SameProductGroup;
 use App\Models\Variant;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
@@ -35,10 +36,9 @@ class ProductsRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->multiple()
-                    ->recordSelectOptionsQuery(fn (Builder $query): Builder => $query->whereDoesntHave('sameProductGroups'))
                     ->recordSelect(fn (Select $select): Select => $select
                         ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array => static::attachableProductsQuery($search)
+                        ->getSearchResultsUsing(fn (string $search): array => static::attachableProductsQuery($search, $this->getOwnerRecord())
                             ->with('variants')
                             ->limit(50)
                             ->get()
@@ -62,12 +62,16 @@ class ProductsRelationManager extends RelationManager
 
     /**
      * Products eligible to attach, searchable by title and by their variants'
-     * SKU, EAN, article code, or title.
+     * SKU, EAN, article code, or title. A product may belong to multiple
+     * groups, so only products already in the given group are excluded.
      */
-    public static function attachableProductsQuery(?string $search = null): Builder
+    public static function attachableProductsQuery(?string $search = null, ?SameProductGroup $excludeGroup = null): Builder
     {
         return Product::query()
-            ->whereDoesntHave('sameProductGroups')
+            ->when($excludeGroup, fn (Builder $query, SameProductGroup $group): Builder => $query->whereDoesntHave(
+                'sameProductGroups',
+                fn (Builder $query): Builder => $query->whereKey($group->getKey()),
+            ))
             ->when(filled($search), function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('title', 'like', "%{$search}%")
