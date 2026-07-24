@@ -54,6 +54,16 @@ it('can delete a group', function () {
     $this->assertDatabaseMissing(SameProductGroup::class, ['id' => $group->id]);
 });
 
+it('can delete a group from the list table row action', function () {
+    $group = SameProductGroup::factory()->create();
+
+    Livewire\Livewire::test(ListSameProductGroups::class)
+        ->callAction(TestAction::make(DeleteAction::class)->table($group))
+        ->assertNotified();
+
+    $this->assertDatabaseMissing(SameProductGroup::class, ['id' => $group->id]);
+});
+
 it('can load the products relation manager', function () {
     $group = SameProductGroup::factory()->create();
     $products = Product::factory()->count(3)->create();

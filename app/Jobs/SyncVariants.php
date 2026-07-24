@@ -4,9 +4,9 @@ namespace App\Jobs;
 
 use App\Formatters\VariantFormatter;
 use App\Models\Variant;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Arr;
 use WebshopappApiClient;
 
 class SyncVariants implements ShouldQueue
@@ -22,25 +22,33 @@ class SyncVariants implements ShouldQueue
 
     private const int PER_PAGE = 250;
 
+    /**
+     * Columns updated when a variant already exists during upsert.
+     *
+     * @var string[]
+     */
+    private const array UPSERT_COLUMNS = [
+        'product_id', 'title', 'sku', 'ean', 'article_code', 'is_default',
+        'sort_order', 'price_excl', 'price_incl', 'old_price_excl',
+        'old_price_incl', 'stock_tracking', 'stock_level', 'weight', 'image',
+        'deleted_at', 'updated_at',
+    ];
+
     public function handle(): void
     {
         $api = $this->createApiClient();
+        $syncedAt = now();
 
-        $data = $this->downloadVariants($api);
-        $data = Arr::keyBy($data, 'id');
-
-        $this->persistVariants($data);
-        $this->deleteRemovedVariants($data);
+        $this->syncVariants($api, $syncedAt);
+        $this->deleteRemovedVariants($syncedAt);
     }
 
     /**
-     * Download all variants from the API.
-     *
-     * @return array<int, array<string, mixed>>
+     * Stream variants from the API one page at a time and upsert each page,
+     * keeping memory flat regardless of the total number of variants.
      */
-    protected function downloadVariants(WebshopappApiClient $api): array
+    protected function syncVariants(WebshopappApiClient $api, CarbonInterface $syncedAt): void
     {
-        $data = [];
         $pages = (int) ceil($api->variants->count() / self::PER_PAGE);
 
         for ($page = 1; $page <= $pages; $page++) {
@@ -49,35 +57,37 @@ class SyncVariants implements ShouldQueue
                 'page' => $page,
             ]);
 
-            $data = array_merge($data, $variants);
-        }
+            $rows = [];
 
-        return $data;
+            foreach ($variants as $variant) {
+                $attributes = (new VariantFormatter($variant))->get();
+                $attributes['image'] = isset($attributes['image']) ? json_encode($attributes['image']) : null;
+
+                $rows[] = [
+                    'id' => $variant['id'],
+                    ...$attributes,
+                    'deleted_at' => null,
+                    'created_at' => $syncedAt,
+                    'updated_at' => $syncedAt,
+                ];
+            }
+
+            if ($rows !== []) {
+                Variant::upsert($rows, ['id'], self::UPSERT_COLUMNS);
+            }
+        }
     }
 
     /**
-     * Persist each variant to the database using the VariantFormatter.
-     *
-     * @param  array<int, array<string, mixed>>  $data
+     * Soft-delete any variants that were not touched by this sync run. Every
+     * synced variant had its updated_at stamped with $syncedAt, so anything
+     * older no longer exists in the API.
      */
-    protected function persistVariants(array $data): void
+    protected function deleteRemovedVariants(CarbonInterface $syncedAt): void
     {
-        foreach ($data as $resource) {
-            $variant = Variant::firstOrNew(['id' => $resource['id']]);
-
-            $variant->forceFill((new VariantFormatter($resource))->get());
-            $variant->save();
-        }
-    }
-
-    /**
-     * Soft-delete any variants that no longer exist in the API.
-     *
-     * @param  array<int, array<string, mixed>>  $data
-     */
-    protected function deleteRemovedVariants(array $data): void
-    {
-        Variant::whereNotIn('id', array_keys($data))->delete();
+        Variant::query()
+            ->where('updated_at', '<', $syncedAt)
+            ->delete();
     }
 
     protected function createApiClient(): WebshopappApiClient
