@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "algolia/algoliasearch-client-php": "^4.46",
         "aws/aws-sdk-php": "^3.376",
         "barryvdh/laravel-debugbar": "^4.2",
         "dutchcodingcompany/filament-developer-logins": "^2.1",
@@ -14,6 +15,7 @@
         "laravel/framework": "^13.0",
         "laravel/octane": "^2.17",
         "laravel/sanctum": "^4.0",
+        "laravel/scout": "^11.4",
         "laravel/tinker": "^3.0",
         "seoshop/seoshop-php": "^1.9"
     },

@@ -1,7 +1,5 @@
 <?php
 
-test('the application returns a successful response', function () {
-    $response = $this->get('/');
-
-    $response->assertStatus(200);
+test('the root route redirects to the admin panel', function () {
+    $this->get('/')->assertRedirect('/admin');
 });

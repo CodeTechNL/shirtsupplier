@@ -10,6 +10,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class FailedJobResource extends Resource
 {
@@ -19,7 +20,14 @@ class FailedJobResource extends Resource
 
     protected static ?string $navigationLabel = 'Failed Jobs';
 
+    protected static string|UnitEnum|null $navigationGroup = 'Developers';
+
     protected static ?string $recordTitleAttribute = 'uuid';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
 
     public static function table(Table $table): Table
     {

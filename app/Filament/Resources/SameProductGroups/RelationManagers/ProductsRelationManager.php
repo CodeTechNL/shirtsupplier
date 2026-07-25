@@ -38,12 +38,7 @@ class ProductsRelationManager extends RelationManager
                     ->multiple()
                     ->recordSelect(fn (Select $select): Select => $select
                         ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array => static::attachableProductsQuery($search, $this->getOwnerRecord())
-                            ->with('variants')
-                            ->limit(50)
-                            ->get()
-                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::searchResultLabel($product)])
-                            ->all())
+                        ->getSearchResultsUsing(fn (string $search): array => static::searchAttachableProducts($search, $this->getOwnerRecord()))
                         ->getOptionLabelsUsing(fn (array $values): array => Product::query()
                             ->whereIn('id', $values)
                             ->get()
@@ -61,29 +56,46 @@ class ProductsRelationManager extends RelationManager
     }
 
     /**
-     * Products eligible to attach, searchable by title and by their variants'
-     * SKU, EAN, article code, or title. A product may belong to multiple
-     * groups, so only products already in the given group are excluded.
+     * Search attachable products through Scout (Algolia). The matched product
+     * keys are then constrained to products not already in the given group,
+     * preserving Scout's relevance order.
+     *
+     * @return array<int, string>
      */
-    public static function attachableProductsQuery(?string $search = null, ?SameProductGroup $excludeGroup = null): Builder
+    public static function searchAttachableProducts(string $search, ?SameProductGroup $excludeGroup = null): array
+    {
+        if (blank($search)) {
+            return [];
+        }
+
+        $ids = Product::search($search)->take(50)->keys()->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $order = array_flip($ids);
+
+        return static::attachableProductsQuery($excludeGroup)
+            ->whereKey($ids)
+            ->with('variants')
+            ->get()
+            ->sortBy(fn (Product $product): int => $order[$product->getKey()] ?? PHP_INT_MAX)
+            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::searchResultLabel($product)])
+            ->all();
+    }
+
+    /**
+     * Products eligible to attach. A product may belong to multiple groups, so
+     * only products already in the given group are excluded.
+     */
+    public static function attachableProductsQuery(?SameProductGroup $excludeGroup = null): Builder
     {
         return Product::query()
             ->when($excludeGroup, fn (Builder $query, SameProductGroup $group): Builder => $query->whereDoesntHave(
                 'sameProductGroups',
                 fn (Builder $query): Builder => $query->whereKey($group->getKey()),
-            ))
-            ->when(filled($search), function (Builder $query) use ($search): void {
-                $query->where(function (Builder $query) use ($search): void {
-                    $query->where('title', 'like', "%{$search}%")
-                        ->orWhere('fulltitle', 'like', "%{$search}%")
-                        ->orWhereHas('variants', function (Builder $query) use ($search): void {
-                            $query->where('sku', 'like', "%{$search}%")
-                                ->orWhere('ean', 'like', "%{$search}%")
-                                ->orWhere('article_code', 'like', "%{$search}%")
-                                ->orWhere('title', 'like', "%{$search}%");
-                        });
-                });
-            });
+            ));
     }
 
     protected static function productLabel(Product $product): string

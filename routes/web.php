@@ -4,9 +4,7 @@ use App\Http\Controllers\Webhooks\ProductWebhookController;
 use App\Http\Controllers\Webhooks\VariantWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/admin');
 
 Route::name('webhooks.')
     ->prefix('webhooks/{language}')

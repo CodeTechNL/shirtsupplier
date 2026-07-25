@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Resources\FailedJobs\FailedJobResource;
 use App\Filament\Resources\FailedJobs\Pages\ListFailedJobs;
 use App\Models\FailedJob;
 use App\Models\User;
@@ -36,7 +37,17 @@ function createFailedJob(array $overrides = []): FailedJob
 }
 
 beforeEach(function () {
+    actingAs(User::factory()->superAdmin()->create());
+});
+
+it('is not accessible to non super admins', function () {
     actingAs(User::factory()->create());
+
+    expect(FailedJobResource::canAccess())->toBeFalse();
+});
+
+it('is accessible to super admins', function () {
+    expect(FailedJobResource::canAccess())->toBeTrue();
 });
 
 it('lists failed jobs', function () {

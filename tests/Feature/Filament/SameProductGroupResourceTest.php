@@ -113,9 +113,9 @@ it('finds attachable products by their variant sku, ean or article code', functi
     $byArticleCode = Product::factory()->create();
     Variant::factory()->for($byArticleCode)->create(['sku' => '', 'ean' => '', 'article_code' => 'ART-XYZ']);
 
-    expect(ProductsRelationManager::attachableProductsQuery('SKU-ABC')->pluck('id')->all())->toBe([$bySku->id])
-        ->and(ProductsRelationManager::attachableProductsQuery('5099206084247')->pluck('id')->all())->toBe([$byEan->id])
-        ->and(ProductsRelationManager::attachableProductsQuery('ART-XYZ')->pluck('id')->all())->toBe([$byArticleCode->id]);
+    expect(array_keys(ProductsRelationManager::searchAttachableProducts('SKU-ABC')))->toBe([$bySku->id])
+        ->and(array_keys(ProductsRelationManager::searchAttachableProducts('5099206084247')))->toBe([$byEan->id])
+        ->and(array_keys(ProductsRelationManager::searchAttachableProducts('ART-XYZ')))->toBe([$byArticleCode->id]);
 });
 
 it('finds attachable products by product title and variant title', function () {
@@ -124,6 +124,6 @@ it('finds attachable products by product title and variant title', function () {
     $byVariantTitle = Product::factory()->create(['fulltitle' => ['nl' => 'Plain Shirt']]);
     Variant::factory()->for($byVariantTitle)->create(['title' => 'XXL-Special']);
 
-    expect(ProductsRelationManager::attachableProductsQuery('Uniquely Named')->pluck('id')->all())->toBe([$byProductTitle->id])
-        ->and(ProductsRelationManager::attachableProductsQuery('XXL-Special')->pluck('id')->all())->toBe([$byVariantTitle->id]);
+    expect(array_keys(ProductsRelationManager::searchAttachableProducts('Uniquely Named')))->toBe([$byProductTitle->id])
+        ->and(array_keys(ProductsRelationManager::searchAttachableProducts('XXL-Special')))->toBe([$byVariantTitle->id]);
 });

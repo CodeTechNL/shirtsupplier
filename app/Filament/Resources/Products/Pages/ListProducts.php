@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Widgets\ProductSyncOverview;
 use App\Jobs\SyncProducts;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -12,6 +13,13 @@ use Filament\Support\Icons\Heroicon;
 class ListProducts extends ListRecords
 {
     protected static string $resource = ProductResource::class;
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            ProductSyncOverview::class,
+        ];
+    }
 
     protected function getHeaderActions(): array
     {

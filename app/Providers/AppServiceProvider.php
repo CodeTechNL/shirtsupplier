@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Filament\Tables\Table;
 use Illuminate\Support\ServiceProvider;
+use WebshopappApiClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +13,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(WebshopappApiClient::class, fn () => new WebshopappApiClient(
+            config('webshop.lightspeed.cluster'),
+            config('webshop.lightspeed.key'),
+            config('webshop.lightspeed.secret'),
+            config('webshop.lightspeed.language'),
+        ));
     }
 
     /**

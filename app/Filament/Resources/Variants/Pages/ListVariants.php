@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Variants\Pages;
 
 use App\Filament\Resources\Variants\VariantResource;
+use App\Filament\Widgets\VariantSyncOverview;
 use App\Jobs\SyncVariants;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -12,6 +13,13 @@ use Filament\Support\Icons\Heroicon;
 class ListVariants extends ListRecords
 {
     protected static string $resource = VariantResource::class;
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            VariantSyncOverview::class,
+        ];
+    }
 
     protected function getHeaderActions(): array
     {
