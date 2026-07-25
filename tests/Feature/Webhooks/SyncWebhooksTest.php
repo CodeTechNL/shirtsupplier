@@ -58,6 +58,36 @@ it('mirrors remote webhooks into the local table', function () {
     ]);
 });
 
+it('normalizes an array language from the api into a scalar code', function () {
+    config()->set('webshop.lightspeed.language', 'nl');
+
+    $api = fakeApiReturningWebhooks([
+        [
+            'id' => 20,
+            'itemGroup' => 'variants',
+            'itemAction' => 'deleted',
+            'language' => [],
+            'address' => 'https://shop.test/webhooks/variants/deleted',
+            'format' => 'json',
+            'isActive' => true,
+        ],
+        [
+            'id' => 21,
+            'itemGroup' => 'products',
+            'itemAction' => 'created',
+            'language' => ['id' => 2, 'code' => 'en', 'title' => 'English'],
+            'address' => 'https://shop.test/webhooks/en/products/created',
+            'format' => 'json',
+            'isActive' => true,
+        ],
+    ]);
+
+    Webhook::syncFromLightspeed($api);
+
+    assertDatabaseHas('webhooks', ['lightspeed_id' => 20, 'language' => 'nl']);
+    assertDatabaseHas('webhooks', ['lightspeed_id' => 21, 'language' => 'en']);
+});
+
 it('updates an existing local webhook by its lightspeed id', function () {
     Webhook::factory()->create([
         'lightspeed_id' => 10,

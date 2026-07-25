@@ -38,7 +38,7 @@ class Webhook extends Model
                 [
                     'item_group' => $webhook['itemGroup'] ?? '',
                     'item_action' => $webhook['itemAction'] ?? '',
-                    'language' => $webhook['language'] ?? config('webshop.lightspeed.language'),
+                    'language' => static::normalizeLanguage($webhook['language'] ?? null),
                     'address' => $webhook['address'] ?? '',
                     'format' => $webhook['format'] ?? 'json',
                     'is_active' => (bool) ($webhook['isActive'] ?? false),
@@ -47,5 +47,27 @@ class Webhook extends Model
         }
 
         static::whereNotIn('lightspeed_id', $remoteIds)->delete();
+    }
+
+    /**
+     * Coerce Lightspeed's language field into a scalar code.
+     *
+     * The API returns a plain code (e.g. "nl") for language-scoped webhooks,
+     * but a nested resource array (or an empty array for unscoped webhooks)
+     * for others. Fall back to the configured default when no code is present.
+     *
+     * @param  array<string, mixed>|string|null  $language
+     */
+    protected static function normalizeLanguage(array|string|null $language): string
+    {
+        if (is_string($language) && $language !== '') {
+            return $language;
+        }
+
+        if (is_array($language) && is_string($language['code'] ?? null) && $language['code'] !== '') {
+            return $language['code'];
+        }
+
+        return config('webshop.lightspeed.language');
     }
 }
