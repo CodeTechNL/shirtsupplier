@@ -2,13 +2,14 @@
 
 use App\Http\Controllers\Webhooks\ProductWebhookController;
 use App\Http\Controllers\Webhooks\VariantWebhookController;
+use App\Http\Middleware\LogIncomingWebhook;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
 
 Route::name('webhooks.')
     ->prefix('webhooks/{language}')
-    ->middleware(config('webshop.webhooks.middleware', []))
+    ->middleware([LogIncomingWebhook::class, ...config('webshop.webhooks.middleware', [])])
     ->group(function () {
         Route::controller(ProductWebhookController::class)
             ->name('products.')
