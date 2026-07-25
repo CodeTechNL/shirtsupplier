@@ -16,16 +16,16 @@ class Dashboard extends BaseDashboard
     {
         return [
             Action::make('syncAlgolia')
-                ->label('Sync to Algolia')
+                ->label('Sync search engine')
                 ->icon('heroicon-o-arrow-path')
                 ->requiresConfirmation()
                 ->modalHeading('Sync search index')
-                ->modalDescription('Re-import all products into the Algolia search index.')
+                ->modalDescription('Re-import all products into the search engine.')
                 ->action(function (): void {
                     Product::makeAllSearchable();
 
                     Notification::make()
-                        ->title('Products synced to Algolia')
+                        ->title('Products synced to the search engine')
                         ->success()
                         ->send();
                 }),

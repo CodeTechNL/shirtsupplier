@@ -2,19 +2,25 @@
 
 namespace App\Filament\Resources\SameProductGroups\RelationManagers;
 
+use App\Filament\Forms\Components\AttachableProductsTable;
 use App\Models\Product;
 use App\Models\SameProductGroup;
 use App\Models\Variant;
-use Filament\Actions\AttachAction;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class ProductsRelationManager extends RelationManager
 {
@@ -34,16 +40,40 @@ class ProductsRelationManager extends RelationManager
                     ->boolean(),
             ])
             ->headerActions([
-                AttachAction::make()
-                    ->multiple()
-                    ->recordSelect(fn (Select $select): Select => $select
-                        ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array => static::searchAttachableProducts($search, $this->getOwnerRecord()))
-                        ->getOptionLabelsUsing(fn (array $values): array => Product::query()
-                            ->whereIn('id', $values)
-                            ->get()
-                            ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::productLabel($product)])
-                            ->all())),
+                Action::make('attach')
+                    ->label('Attach products')
+                    ->icon(Heroicon::Plus)
+                    ->modalHeading('Attach products')
+                    ->modalWidth(Width::FiveExtraLarge)
+                    ->modalSubmitActionLabel('Attach selected')
+                    ->schema([
+                        static::attachSearchField(),
+                        AttachableProductsTable::make('recordIds')
+                            ->hiddenLabel()
+                            ->rowsUsing(fn (Get $get): array => static::attachableProductRows(
+                                (string) ($get('search') ?? ''),
+                                $this->getOwnerRecord(),
+                            )),
+                    ])
+                    ->action(function (array $data, Action $action): void {
+                        $ids = array_values(array_filter((array) ($data['recordIds'] ?? [])));
+
+                        if ($ids === []) {
+                            Notification::make()
+                                ->title('Select at least one product to attach.')
+                                ->warning()
+                                ->send();
+
+                            $action->halt();
+                        }
+
+                        $this->getOwnerRecord()->products()->syncWithoutDetaching($ids);
+
+                        Notification::make()
+                            ->title(trans_choice('{1} :count product attached|[2,*] :count products attached', count($ids), ['count' => count($ids)]))
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->recordActions([
                 DetachAction::make(),
@@ -56,22 +86,45 @@ class ProductsRelationManager extends RelationManager
     }
 
     /**
-     * Search attachable products through Scout (Algolia). The matched product
-     * keys are then constrained to products not already in the given group,
-     * preserving Scout's relevance order.
-     *
-     * @return array<int, string>
+     * The attach modal's search box. Rendered as a native search input and
+     * opted out of browser/password-manager autofill so Safari's iCloud
+     * Passwords (and 1Password/LastPass/Bitwarden) don't prompt on it.
      */
-    public static function searchAttachableProducts(string $search, ?SameProductGroup $excludeGroup = null): array
+    protected static function attachSearchField(): TextInput
+    {
+        return TextInput::make('search')
+            ->hiddenLabel()
+            ->placeholder('Search by title, SKU, EAN or article code…')
+            ->prefixIcon(Heroicon::MagnifyingGlass)
+            ->type('search')
+            ->autocomplete(false)
+            ->extraInputAttributes([
+                'data-form-type' => 'other',
+                'data-1p-ignore' => 'true',
+                'data-lpignore' => 'true',
+                'data-bwignore' => 'true',
+            ])
+            ->live(debounce: 400)
+            ->dehydrated(false)
+            ->partiallyRenderComponentsAfterStateUpdated(['recordIds']);
+    }
+
+    /**
+     * Search attachable products through Scout (Algolia), constrained to
+     * products not already in the given group and ordered by Scout relevance.
+     *
+     * @return Collection<int, Product>
+     */
+    public static function searchAttachableProductModels(string $search, ?SameProductGroup $excludeGroup = null): Collection
     {
         if (blank($search)) {
-            return [];
+            return new Collection;
         }
 
         $ids = Product::search($search)->take(50)->keys()->all();
 
         if ($ids === []) {
-            return [];
+            return new Collection;
         }
 
         $order = array_flip($ids);
@@ -81,7 +134,35 @@ class ProductsRelationManager extends RelationManager
             ->with('variants')
             ->get()
             ->sortBy(fn (Product $product): int => $order[$product->getKey()] ?? PHP_INT_MAX)
+            ->values();
+    }
+
+    /**
+     * Attachable products as `[id => label]`, used for option lookups.
+     *
+     * @return array<int, string>
+     */
+    public static function searchAttachableProducts(string $search, ?SameProductGroup $excludeGroup = null): array
+    {
+        return static::searchAttachableProductModels($search, $excludeGroup)
             ->mapWithKeys(fn (Product $product): array => [$product->getKey() => static::searchResultLabel($product)])
+            ->all();
+    }
+
+    /**
+     * Attachable products shaped as rows for the attach modal's table.
+     *
+     * @return array<int, array{id: int, title: string, codes: string, visible: bool}>
+     */
+    public static function attachableProductRows(string $search, ?SameProductGroup $excludeGroup = null): array
+    {
+        return static::searchAttachableProductModels($search, $excludeGroup)
+            ->map(fn (Product $product): array => [
+                'id' => $product->getKey(),
+                'title' => static::productLabel($product),
+                'codes' => static::variantCodes($product),
+                'visible' => (bool) $product->is_visible,
+            ])
             ->all();
     }
 
@@ -109,15 +190,24 @@ class ProductsRelationManager extends RelationManager
      */
     protected static function searchResultLabel(Product $product): string
     {
-        $codes = $product->variants
+        $codes = static::variantCodes($product);
+
+        return $codes !== ''
+            ? static::productLabel($product)." — {$codes}"
+            : static::productLabel($product);
+    }
+
+    /**
+     * The distinct variant identifiers (SKU, article code, EAN) for a product,
+     * capped so long variant lists stay readable.
+     */
+    protected static function variantCodes(Product $product): string
+    {
+        return $product->variants
             ->flatMap(fn (Variant $variant): array => [$variant->sku, $variant->article_code, $variant->ean])
             ->filter()
             ->unique()
             ->take(5)
             ->implode(', ');
-
-        return filled($codes)
-            ? static::productLabel($product)." — {$codes}"
-            : static::productLabel($product);
     }
 }

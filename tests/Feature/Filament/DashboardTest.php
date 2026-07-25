@@ -12,9 +12,9 @@ uses(LazilyRefreshDatabase::class);
 
 beforeEach(fn () => actingAs(User::factory()->create()));
 
-it('exposes a sync to algolia action on the dashboard', function () {
+it('exposes a sync search engine action on the dashboard', function () {
     Livewire::test(Dashboard::class)
-        ->assertActionExists('syncAlgolia');
+        ->assertActionExists('syncAlgolia', fn ($action): bool => $action->getLabel() === 'Sync search engine');
 });
 
 it('imports products into the search index when synced', function () {

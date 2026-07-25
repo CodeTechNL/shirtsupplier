@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9e75d6486feacd86e419871536393039",
+    "content-hash": "fe0c389eb6626d695ebfa9eeaed61f34",
     "packages": [
         {
             "name": "algolia/algoliasearch-client-php",
@@ -1864,6 +1864,69 @@
                 }
             ],
             "time": "2025-12-03T09:33:47+00:00"
+        },
+        {
+            "name": "gboquizosanchez/filament-log-viewer",
+            "version": "2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gboquizosanchez/filament-log-viewer.git",
+                "reference": "a32df2ae9d9512c166ac1a93eed57c9677294024"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/gboquizosanchez/filament-log-viewer/zipball/a32df2ae9d9512c166ac1a93eed57c9677294024",
+                "reference": "a32df2ae9d9512c166ac1a93eed57c9677294024",
+                "shasum": ""
+            },
+            "require": {
+                "ext-zip": "*",
+                "php": "^8.2|^8.3|^8.4",
+                "symfony/polyfill-php83": "^1.33"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.64",
+                "hermes/dependencies": "^1.1",
+                "larastan/larastan": "^2.9",
+                "orchestra/testbench": "^9.1",
+                "pestphp/pest": "^3.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Boquizo\\FilamentLogViewer\\FilamentLogViewerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Boquizo\\FilamentLogViewer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Germán Boquizo Sánchez",
+                    "email": "germanboquizosanchez@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Filament Log Viewer",
+            "homepage": "https://github.com/gboquizosanchez",
+            "keywords": [
+                "filament",
+                "laravel",
+                "log-viewer"
+            ],
+            "support": {
+                "issues": "https://github.com/gboquizosanchez/filament-log-viewer/issues",
+                "source": "https://github.com/gboquizosanchez/filament-log-viewer/tree/2.3.0"
+            },
+            "time": "2026-04-07T12:29:16+00:00"
         },
         {
             "name": "graham-campbell/result-type",
