@@ -37,6 +37,14 @@ abstract class LightspeedCountOverview extends BaseWidget
      */
     abstract protected function lightspeedCount(WebshopappApiClient $api): int;
 
+    /**
+     * Forget the cached live Lightspeed count so it is fetched fresh on the next render.
+     */
+    public static function forgetCachedCount(): void
+    {
+        Cache::forget(app(static::class)->cacheKey());
+    }
+
     protected function getStats(): array
     {
         return [

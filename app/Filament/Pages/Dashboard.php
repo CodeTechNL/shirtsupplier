@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\ProductSyncOverview;
+use App\Filament\Widgets\VariantSyncOverview;
 use App\Models\Product;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -26,6 +28,23 @@ class Dashboard extends BaseDashboard
 
                     Notification::make()
                         ->title('Products synced to the search engine')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('clearMetrics')
+                ->label('Clear metrics')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Clear metrics')
+                ->modalDescription('This will clear the cached product and variant counts so they are fetched fresh from Lightspeed on the next load.')
+                ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false)
+                ->action(function (): void {
+                    ProductSyncOverview::forgetCachedCount();
+                    VariantSyncOverview::forgetCachedCount();
+
+                    Notification::make()
+                        ->title('Product and variant metrics cleared.')
                         ->success()
                         ->send();
                 }),
