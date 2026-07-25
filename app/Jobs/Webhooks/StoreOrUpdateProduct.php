@@ -3,6 +3,7 @@
 namespace App\Jobs\Webhooks;
 
 use App\Formatters\ProductFormatter;
+use App\Jobs\ReindexProductSearch;
 use App\Models\Product;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -30,5 +31,8 @@ class StoreOrUpdateProduct implements ShouldQueue
 
         $product->forceFill($formatted);
         $product->save();
+
+        dispatch(new ReindexProductSearch($product->id))
+            ->delay(now()->addMinutes(2));
     }
 }
