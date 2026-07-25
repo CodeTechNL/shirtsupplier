@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Laravel\Scout\Searchable;
 
 class Product extends Model
@@ -44,6 +45,19 @@ class Product extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(Variant::class);
+    }
+
+    /**
+     * Eager-load the variants for a whole chunk of products before they are
+     * transformed into search records. This keeps a full re-index to one query
+     * per chunk instead of an N+1 lookup while enriching each product.
+     *
+     * @param  Collection<int, static>  $models
+     * @return Collection<int, static>
+     */
+    public function makeSearchableUsing(Collection $models): Collection
+    {
+        return $models->load('variants');
     }
 
     /**
