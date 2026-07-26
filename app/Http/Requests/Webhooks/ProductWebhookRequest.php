@@ -27,6 +27,11 @@ class ProductWebhookRequest extends FormRequest
         return $this->input('product', []);
     }
 
+    public function hasProduct(): bool
+    {
+        return filled($this->input('product.id'));
+    }
+
     public function getProductId(): int|string|null
     {
         return $this->header('x-product-id') ?? $this->integer('resource_id');

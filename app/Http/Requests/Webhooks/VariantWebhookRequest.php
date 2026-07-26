@@ -28,6 +28,11 @@ class VariantWebhookRequest extends FormRequest
         return $this->input('variant', []);
     }
 
+    public function hasVariant(): bool
+    {
+        return filled($this->input('variant.id'));
+    }
+
     public function getVariantId(): int|string|null
     {
         return $this->header('x-variant-id') ?? $this->integer('resource_id');

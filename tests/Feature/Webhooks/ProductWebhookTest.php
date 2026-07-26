@@ -83,6 +83,20 @@ it('can soft delete a product via deleted webhook', function () {
         ->and(Product::withTrashed()->find($id))->not->toBeNull();
 });
 
+it('ignores a webhook without a product payload', function (string $route, array $payload) {
+    Queue::fake();
+
+    $this->post(route($route, ['language' => 'nl']), $payload)
+        ->assertSuccessful();
+
+    Queue::assertNothingPushed();
+})->with([
+    'created without payload' => ['webhooks.products.created', []],
+    'created without id' => ['webhooks.products.created', ['product' => ['title' => 'No Id']]],
+    'updated without payload' => ['webhooks.products.updated', []],
+    'updated without id' => ['webhooks.products.updated', ['product' => ['title' => 'No Id']]],
+]);
+
 it('returns success even when deleting a non-existent product', function () {
     $this->post(route('webhooks.products.deleted', ['language' => 'nl']), ['resource_id' => 99999])
         ->assertSuccessful();

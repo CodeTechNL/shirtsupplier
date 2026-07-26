@@ -3,6 +3,7 @@
 use App\Models\Product;
 use App\Models\Variant;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -76,6 +77,20 @@ it('can soft delete a variant via deleted webhook', function () {
     expect(Variant::find($id))->toBeNull()
         ->and(Variant::withTrashed()->find($id))->not->toBeNull();
 });
+
+it('ignores a webhook without a variant payload', function (string $route, array $payload) {
+    Queue::fake();
+
+    $this->post(route($route, ['language' => 'nl']), $payload)
+        ->assertSuccessful();
+
+    Queue::assertNothingPushed();
+})->with([
+    'created without payload' => ['webhooks.variants.created', []],
+    'created without id' => ['webhooks.variants.created', ['variant' => ['title' => 'No Id']]],
+    'updated without payload' => ['webhooks.variants.updated', []],
+    'updated without id' => ['webhooks.variants.updated', ['variant' => ['title' => 'No Id']]],
+]);
 
 it('returns success even when deleting a non-existent variant', function () {
     $this->post(route('webhooks.variants.deleted', ['language' => 'nl']), ['resource_id' => 99999])

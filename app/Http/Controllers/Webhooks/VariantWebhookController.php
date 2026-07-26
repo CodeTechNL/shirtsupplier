@@ -13,6 +13,10 @@ class VariantWebhookController extends Controller
 {
     public function created(VariantWebhookRequest $request): Response
     {
+        if (! $request->hasVariant()) {
+            return response('Variant Payload Missing');
+        }
+
         dispatch(new StoreOrUpdateVariant($request->getVariant()));
 
         return response('Variant Stored');
@@ -20,6 +24,10 @@ class VariantWebhookController extends Controller
 
     public function updated(VariantWebhookRequest $request): Response
     {
+        if (! $request->hasVariant()) {
+            return response('Variant Payload Missing');
+        }
+
         dispatch(new StoreOrUpdateVariant($request->getVariant()));
 
         return response('Variant Updated');

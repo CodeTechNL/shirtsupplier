@@ -13,6 +13,10 @@ class ProductWebhookController extends Controller
 {
     public function created(ProductWebhookRequest $request): Response
     {
+        if (! $request->hasProduct()) {
+            return response('Product Payload Missing');
+        }
+
         dispatch(new StoreOrUpdateProduct($request->getProduct(), $request->getLanguage()));
 
         return response('Product Stored');
@@ -20,6 +24,10 @@ class ProductWebhookController extends Controller
 
     public function updated(ProductWebhookRequest $request): Response
     {
+        if (! $request->hasProduct()) {
+            return response('Product Payload Missing');
+        }
+
         dispatch(new StoreOrUpdateProduct($request->getProduct(), $request->getLanguage()));
 
         return response('Product Updated');
