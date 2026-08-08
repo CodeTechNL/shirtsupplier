@@ -30,6 +30,8 @@ class ProductsRelationManager extends RelationManager
     {
         return $table
             ->recordTitle(fn (Product $record): string => static::productLabel($record))
+            ->reorderable(SameProductGroup::QUALIFIED_ORDER_COLUMN)
+            ->defaultSort(SameProductGroup::QUALIFIED_ORDER_COLUMN)
             ->columns([
                 TextColumn::make('fulltitle')
                     ->label('Title')
@@ -67,10 +69,10 @@ class ProductsRelationManager extends RelationManager
                             $action->halt();
                         }
 
-                        $this->getOwnerRecord()->products()->syncWithoutDetaching($ids);
+                        $attached = $this->getOwnerRecord()->attachProductsToEnd($ids);
 
                         Notification::make()
-                            ->title(trans_choice('{1} :count product attached|[2,*] :count products attached', count($ids), ['count' => count($ids)]))
+                            ->title(trans_choice('{1} :count product attached|[2,*] :count products attached', count($attached), ['count' => count($attached)]))
                             ->success()
                             ->send();
                     }),

@@ -52,6 +52,7 @@ it('keys products by id and exposes only url and image', function () {
                 'products' => [
                     (string) $sameProduct->id => [
                         'url' => 'my-product-slug',
+                        'sort_order' => 1,
                         'image' => [
                             'createdAt' => '2026-03-20T11:12:20+01:00',
                             'updatedAt' => '2026-03-20T11:12:20+01:00',
@@ -101,6 +102,47 @@ it('returns only visible products from the group', function () {
     $response->assertOk()
         ->assertJsonCount(1, 'data.products')
         ->assertJsonPath('data.count', 1);
+});
+
+it('returns products in the order set in the admin', function () {
+    $group = SameProductGroup::factory()->create();
+    $product = Product::factory()->create();
+    [$first, $second, $third] = Product::factory()->count(3)->create()->all();
+
+    $group->products()->attach([
+        $product->id => ['sort_order' => 1],
+        $third->id => ['sort_order' => 2],
+        $first->id => ['sort_order' => 3],
+        $second->id => ['sort_order' => 4],
+    ]);
+
+    $response = $this->getJson('/api/same-products?product='.$product->id);
+
+    $response->assertOk()
+        ->assertJsonPath("data.products.{$third->id}.sort_order", 1)
+        ->assertJsonPath("data.products.{$first->id}.sort_order", 2)
+        ->assertJsonPath("data.products.{$second->id}.sort_order", 3);
+
+    expect(array_keys($response->json('data.products')))
+        ->toBe([$third->id, $first->id, $second->id]);
+});
+
+it('numbers the returned products consecutively when hidden ones are skipped', function () {
+    $group = SameProductGroup::factory()->create();
+    $product = Product::factory()->create();
+    $visible = Product::factory()->create();
+    $hidden = Product::factory()->invisible()->create();
+
+    $group->products()->attach([
+        $product->id => ['sort_order' => 1],
+        $hidden->id => ['sort_order' => 2],
+        $visible->id => ['sort_order' => 3],
+    ]);
+
+    $this->getJson('/api/same-products?product='.$product->id)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.products')
+        ->assertJsonPath("data.products.{$visible->id}.sort_order", 1);
 });
 
 it('returns 422 when product parameter is missing', function () {

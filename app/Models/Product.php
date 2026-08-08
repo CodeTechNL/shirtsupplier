@@ -39,7 +39,9 @@ class Product extends Model
 
     public function sameProductGroups(): BelongsToMany
     {
-        return $this->belongsToMany(SameProductGroup::class, 'same_product_group_product')->withTimestamps();
+        return $this->belongsToMany(SameProductGroup::class, SameProductGroup::PIVOT_TABLE)
+            ->withPivot(SameProductGroup::ORDER_COLUMN)
+            ->withTimestamps();
     }
 
     public function variants(): HasMany

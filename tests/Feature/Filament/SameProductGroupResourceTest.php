@@ -78,6 +78,65 @@ it('can load the products relation manager', function () {
         ->assertCanSeeTableRecords($products);
 });
 
+it('lists products in their manual order', function () {
+    $group = SameProductGroup::factory()->create();
+    $products = Product::factory()->count(3)->create();
+
+    $group->products()->attach([
+        $products[0]->id => ['sort_order' => 3],
+        $products[1]->id => ['sort_order' => 1],
+        $products[2]->id => ['sort_order' => 2],
+    ]);
+
+    Livewire\Livewire::test(ProductsRelationManager::class, [
+        'ownerRecord' => $group,
+        'pageClass' => EditSameProductGroup::class,
+    ])
+        ->assertOk()
+        ->assertCanSeeTableRecords([$products[1], $products[2], $products[0]], inOrder: true);
+});
+
+it('can reorder products with drag and drop', function () {
+    $group = SameProductGroup::factory()->create();
+    $products = Product::factory()->count(3)->create();
+    $group->attachProductsToEnd($products->pluck('id')->all());
+
+    Livewire\Livewire::test(ProductsRelationManager::class, [
+        'ownerRecord' => $group,
+        'pageClass' => EditSameProductGroup::class,
+    ])
+        ->call('reorderTable', [$products[2]->id, $products[0]->id, $products[1]->id])
+        ->assertOk();
+
+    expect($group->orderedProducts()->pluck('products.id')->all())
+        ->toBe([$products[2]->id, $products[0]->id, $products[1]->id]);
+});
+
+it('attaches products at the end of the manual order', function () {
+    $group = SameProductGroup::factory()->create();
+    $first = Product::factory()->create();
+    $second = Product::factory()->create();
+
+    $group->attachProductsToEnd([$second->id]);
+    $group->attachProductsToEnd([$first->id]);
+
+    expect($group->orderedProducts()->pluck('products.id')->all())
+        ->toBe([$second->id, $first->id]);
+});
+
+it('does not reattach or reposition products already in the group', function () {
+    $group = SameProductGroup::factory()->create();
+    $existing = Product::factory()->create();
+    $new = Product::factory()->create();
+
+    $group->attachProductsToEnd([$existing->id]);
+    $attached = $group->attachProductsToEnd([$existing->id, $new->id]);
+
+    expect($attached)->toBe([$new->id])
+        ->and($group->products()->count())->toBe(2)
+        ->and($group->orderedProducts()->pluck('products.id')->all())->toBe([$existing->id, $new->id]);
+});
+
 it('validates that name is required on create', function () {
     Livewire\Livewire::test(ListSameProductGroups::class)
         ->callAction(CreateAction::class, ['name' => null])

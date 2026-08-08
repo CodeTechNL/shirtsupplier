@@ -25,7 +25,7 @@ class SameProductGroupSeeder extends Seeder
             ->create()
             ->each(function (SameProductGroup $group) use (&$availableProducts) {
                 $take = min(rand(2, 5), $availableProducts->count());
-                $group->products()->attach($availableProducts->splice(0, $take)->pluck('id'));
+                $group->attachProductsToEnd($availableProducts->splice(0, $take)->pluck('id')->all());
             });
     }
 }
