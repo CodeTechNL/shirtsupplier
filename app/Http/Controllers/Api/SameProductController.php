@@ -26,16 +26,15 @@ class SameProductController extends Controller
             : new Collection;
 
         /**
-         * Products are emitted in the group's manual order, but JSON object
-         * keys are numeric here and clients that decode into a plain object
-         * (JavaScript included) will re-sort them by id. `sort_order` carries
-         * the intended position so the order survives decoding.
+         * Keyed by position (1..n), not by product id. A JSON object's numeric
+         * keys are re-sorted ascending by any client that decodes into a plain
+         * object, JavaScript included, which silently destroyed the group's
+         * manual order when the id was the key. Keying by position makes that
+         * same ascending pass yield the intended order, so ordering stays the
+         * application's job. Each product carries its own `id`.
          */
         $products = $sameProducts->mapWithKeys(fn (Product $sameProduct, int $index): array => [
-            $sameProduct->id => [
-                ...(new ProductResource($sameProduct))->resolve($request),
-                'sort_order' => $index + 1,
-            ],
+            $index + 1 => (new ProductResource($sameProduct))->resolve($request),
         ]);
 
         return response()->json([

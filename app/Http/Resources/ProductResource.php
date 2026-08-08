@@ -12,6 +12,7 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            'id' => $this->id,
             'url' => Arr::first((array) $this->url),
             'image' => $this->formatImage(),
         ];

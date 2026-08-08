@@ -23,7 +23,7 @@ it('returns same products for a product in a group', function () {
         ->assertJsonPath('status.status', 'success');
 });
 
-it('keys products by id and exposes only url and image', function () {
+it('keys products by position and exposes only id, url and image', function () {
     $group = SameProductGroup::factory()->create();
     $product = Product::factory()->create();
     $sameProduct = Product::factory()->create([
@@ -44,15 +44,16 @@ it('keys products by id and exposes only url and image', function () {
     $response = $this->getJson('/api/same-products?product='.$product->id);
 
     $response->assertOk()
-        ->assertJsonPath("data.products.{$sameProduct->id}.url", 'my-product-slug')
-        ->assertJsonPath("data.products.{$sameProduct->id}.image.src", 'https://cdn.example.com/image.jpg')
-        ->assertJsonPath("data.products.{$sameProduct->id}.image.createdAt", '2026-03-20T11:12:20+01:00')
+        ->assertJsonPath('data.products.1.id', $sameProduct->id)
+        ->assertJsonPath('data.products.1.url', 'my-product-slug')
+        ->assertJsonPath('data.products.1.image.src', 'https://cdn.example.com/image.jpg')
+        ->assertJsonPath('data.products.1.image.createdAt', '2026-03-20T11:12:20+01:00')
         ->assertExactJson([
             'data' => [
                 'products' => [
-                    (string) $sameProduct->id => [
+                    '1' => [
+                        'id' => $sameProduct->id,
                         'url' => 'my-product-slug',
-                        'sort_order' => 1,
                         'image' => [
                             'createdAt' => '2026-03-20T11:12:20+01:00',
                             'updatedAt' => '2026-03-20T11:12:20+01:00',
@@ -119,15 +120,48 @@ it('returns products in the order set in the admin', function () {
     $response = $this->getJson('/api/same-products?product='.$product->id);
 
     $response->assertOk()
-        ->assertJsonPath("data.products.{$third->id}.sort_order", 1)
-        ->assertJsonPath("data.products.{$first->id}.sort_order", 2)
-        ->assertJsonPath("data.products.{$second->id}.sort_order", 3);
+        ->assertJsonPath('data.products.1.id', $third->id)
+        ->assertJsonPath('data.products.2.id', $first->id)
+        ->assertJsonPath('data.products.3.id', $second->id);
 
-    expect(array_keys($response->json('data.products')))
-        ->toBe([$third->id, $first->id, $second->id]);
+    expect(array_keys($response->json('data.products')))->toBe([1, 2, 3]);
 });
 
-it('numbers the returned products consecutively when hidden ones are skipped', function () {
+it('serialises products as a keyed object rather than a json array', function () {
+    $group = SameProductGroup::factory()->create();
+    $product = Product::factory()->create();
+    $sameProducts = Product::factory()->count(2)->create();
+
+    $group->attachProductsToEnd([$product->id, ...$sameProducts->pluck('id')]);
+
+    $content = $this->getJson('/api/same-products?product='.$product->id)->getContent();
+
+    /** A JSON array would drop the position keys and start numbering at 0. */
+    expect($content)->toContain('"products":{"1":{')
+        ->and($content)->not->toContain('"products":[');
+});
+
+it('keys products so that ascending key order is the admin order', function () {
+    $group = SameProductGroup::factory()->create();
+    $product = Product::factory()->create();
+    [$first, $second, $third] = Product::factory()->count(3)->create()->all();
+
+    $group->products()->attach([
+        $product->id => ['sort_order' => 1],
+        $third->id => ['sort_order' => 2],
+        $first->id => ['sort_order' => 3],
+        $second->id => ['sort_order' => 4],
+    ]);
+
+    $products = $this->getJson('/api/same-products?product='.$product->id)->json('data.products');
+
+    /** Sorting the keys ascending is what a JavaScript client does implicitly. */
+    ksort($products);
+
+    expect(array_column($products, 'id'))->toBe([$third->id, $first->id, $second->id]);
+});
+
+it('numbers the position keys consecutively when hidden ones are skipped', function () {
     $group = SameProductGroup::factory()->create();
     $product = Product::factory()->create();
     $visible = Product::factory()->create();
@@ -142,7 +176,7 @@ it('numbers the returned products consecutively when hidden ones are skipped', f
     $this->getJson('/api/same-products?product='.$product->id)
         ->assertOk()
         ->assertJsonCount(1, 'data.products')
-        ->assertJsonPath("data.products.{$visible->id}.sort_order", 1);
+        ->assertJsonPath('data.products.1.id', $visible->id);
 });
 
 it('returns 422 when product parameter is missing', function () {
