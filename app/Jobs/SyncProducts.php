@@ -35,22 +35,21 @@ class SyncProducts implements ShouldQueue
         $defaultLanguage = config('webshop.languages')[0];
         $otherLanguages = array_slice(config('webshop.languages'), 1);
 
-        $data = $this->downloadProducts($api, $defaultLanguage);
-        $data = Arr::keyBy($data, 'id');
-        $data = $this->downloadTranslations($api, $data, $otherLanguages);
+        $syncedIds = $this->syncProducts($api, $defaultLanguage);
+        $this->syncTranslations($api, $otherLanguages);
 
-        $this->persistProducts($data);
-        $this->deleteRemovedProducts($data);
+        $this->deleteRemovedProducts($syncedIds);
     }
 
     /**
-     * Download all products from the API, wrapping translatable fields in language arrays.
+     * Stream products from the API one page at a time and persist each page,
+     * keeping memory flat regardless of the total number of products.
      *
-     * @return array<int, array<string, mixed>>
+     * @return int[] The ids of every product returned by the API.
      */
-    protected function downloadProducts(WebshopappApiClient $api, string $defaultLanguage): array
+    protected function syncProducts(WebshopappApiClient $api, string $defaultLanguage): array
     {
-        $data = [];
+        $syncedIds = [];
         $pages = (int) ceil($api->products->count() / self::PER_PAGE);
 
         for ($page = 1; $page <= $pages; $page++) {
@@ -59,87 +58,76 @@ class SyncProducts implements ShouldQueue
                 'page' => $page,
             ]);
 
-            foreach ($products as &$product) {
-                foreach (array_keys(self::TRANSLATABLES) as $property) {
-                    $product[$property] = [
-                        $defaultLanguage => $product[$property],
-                    ];
-                }
-            }
+            foreach ($products as $resource) {
+                $product = Product::withTrashed()->firstOrNew(['id' => $resource['id']]);
 
-            $data = array_merge($data, $products);
+                $formatter = new ProductFormatter($resource, $product);
+
+                foreach (self::TRANSLATABLES as $apiKey => $dbKey) {
+                    $formatter->setLanguageAttribute($defaultLanguage, $dbKey, $resource[$apiKey]);
+                }
+
+                $product->forceFill([...$formatter->get(), 'deleted_at' => null]);
+                $product->save();
+
+                $syncedIds[] = (int) $resource['id'];
+            }
         }
 
-        return $data;
+        return $syncedIds;
     }
 
     /**
-     * Fetch translations for each additional language and merge them into the data.
+     * Stream the translatable fields for each additional language one page at
+     * a time and merge them into the products persisted by syncProducts().
      *
-     * @param  array<int, array<string, mixed>>  $data
-     * @return array<int, array<string, mixed>>
+     * @param  string[]  $languages
      */
-    protected function downloadTranslations(WebshopappApiClient $api, array $data, array $languages): array
+    protected function syncTranslations(WebshopappApiClient $api, array $languages): void
     {
-        $fields = 'id,' . implode(',', array_keys(self::TRANSLATABLES));
+        $fields = 'id,'.implode(',', array_keys(self::TRANSLATABLES));
         $pages = (int) ceil($api->products->count() / self::PER_PAGE);
 
         foreach ($languages as $language) {
             $api->setApiLanguage($language);
 
             for ($page = 1; $page <= $pages; $page++) {
-                $products = $api->products->get(null, [
+                $resources = $api->products->get(null, [
                     'limit' => self::PER_PAGE,
                     'fields' => $fields,
                     'page' => $page,
                 ]);
 
-                foreach ($products as $product) {
-                    if (! isset($data[$product['id']])) {
+                $products = Product::whereKey(array_column($resources, 'id'))->get()->keyBy('id');
+
+                foreach ($resources as $resource) {
+                    $product = $products->get($resource['id']);
+
+                    if ($product === null) {
                         continue;
                     }
 
+                    $formatter = new ProductFormatter($resource, $product);
+
                     foreach (self::TRANSLATABLES as $apiKey => $dbKey) {
-                        $data[$product['id']][$apiKey][$language] = $product[$apiKey];
+                        $formatter->setLanguageAttribute($language, $dbKey, $resource[$apiKey]);
                     }
+
+                    $product->forceFill(Arr::only($formatter->get(), array_values(self::TRANSLATABLES)));
+                    $product->save();
                 }
             }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Persist each product to the database using the ProductFormatter.
-     *
-     * @param  array<int, array<string, mixed>>  $data
-     */
-    protected function persistProducts(array $data): void
-    {
-        foreach ($data as $resource) {
-            $product = Product::firstOrNew(['id' => $resource['id']]);
-
-            $formatter = new ProductFormatter($resource, $product);
-
-            foreach (self::TRANSLATABLES as $apiKey => $dbKey) {
-                foreach ($resource[$apiKey] as $language => $value) {
-                    $formatter->setLanguageAttribute($language, $dbKey, $value);
-                }
-            }
-
-            $product->forceFill($formatter->get());
-            $product->save();
         }
     }
 
     /**
      * Soft-delete any products that no longer exist in the API.
      *
-     * @param  array<int, array<string, mixed>>  $data
+     * @param  int[]  $syncedIds
      */
-    protected function deleteRemovedProducts(array $data): void
+    protected function deleteRemovedProducts(array $syncedIds): void
     {
-        Product::whereNotIn('id', array_keys($data))->delete();
+        Product::whereNotIn('id', $syncedIds)->delete();
     }
 
     protected function createApiClient(): WebshopappApiClient
